@@ -1,2 +1,2 @@
 # math
-a simple C++ command line math application
+A simple C++ command line math application
