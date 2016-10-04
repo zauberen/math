@@ -7,19 +7,29 @@ void help(); // displays basic usage instructions
 
 int main(int argc, char **argv)
 {
+    // Startup args parsing
+    if (argc > 0)
+    {
+        if (DEBUG)
+        for(int i = 0; i < argc; i++)
+        {
+            std::cout << i << ": " << argv[i] << std::endl;
+        }
+    }
     // Variables
+    // Minor constants (only used here)
     const double VERSION = 0;
-    std::string sInput;
-    int iInputLength;
+    const std::string DESCRIPTION = "Alpha Build";
+    // Normal variables
+    std::string sInput; // Used to grab and store user input
 
-    std::cout << "Math version: " << VERSION << std::endl;
+    std::cout << "Math version: " << VERSION << " " << DESCRIPTION << std::endl;
     std::cout << "For basic usage help send \"H\"" << std::endl;
     
     while(true)
     {
         std::cout << "> ";
         getline(std::cin,sInput);
-        iInputLength = sInput.length() - 1;
 
         if (sInput[0] == 'H')
         {
@@ -27,7 +37,7 @@ int main(int argc, char **argv)
         }
         else if (sInput[0] == 'E')
         {
-            cout << "Exiting Application..." << endl;
+            std::cout << "Exiting Application..." << std::endl;
             return 0;
         }
         else if (sInput[0] == 'S')
@@ -36,7 +46,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            doMath(sInput); // Parses the statement and returns a result into the variable a
+            doMath(sInput, false); // Parses the statement and returns a result into the variable a
         }
     }
 }
@@ -51,5 +61,9 @@ void help()
         << "S = Set a variable (note: variables are stored for use between sessions)" << std::endl
         << "Note: variable 'a' should not be used, as it will be overwritten by the next expression's result" << std::endl
         << std::endl
-        << "For more documentation on using this application, consult the source repo's documentation" << std:: endl;
+        << "For more documentation on using this application, consult the source repo's documentation" << std::endl
+        << "This application is licensed under the terms of the GPLv3." << std::endl
+        << "To report bugs/issues:" << std::endl 
+        << "Submit an issue at: www.github.com/dandreas/math" << std::endl
+        << "or email the dev at: belfieldcecil@gmail.com" << std::endl;
 }

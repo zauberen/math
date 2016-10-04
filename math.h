@@ -4,12 +4,19 @@
 #include <vector>
 
 // Global variables
-int iVariables[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} // where 0 = a
+const bool DEBUG = true; // only useful for development
 
-public void doMath(std::string sInput); // This function both parses a string and does the operation
+extern double dVariables[]; // contains 26 vars, value in math.cpp
+
+double doMath(std::string sInput, bool bRecursive); // This function both parses a string and does the operation
 
 // Getter and setter functions for the iVariables array
-public int readVariable(char cVariable);
-public void setVariable();
+double readVariable(char cVariable);
+void setVariable();
+// Overload for setting variables during math calculations
+bool setVariable(char cVariable,double dValue);
+
+// Function for solving parsed strings (only for use in doMath
+double solve(std::vector<char> cvOperators, std::vector<double> dvNumbers);
 
 #endif
