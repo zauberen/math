@@ -221,6 +221,7 @@ double readVariable(char cVariable)
 void setVariable()
 {
     std::string sInput; // Used for user input
+    char cVar; // Used as a reference for the final cout
     int iIndex = 0; // Stores the array location (dVariables)
 
     std::cout << "character: ";
@@ -228,7 +229,8 @@ void setVariable()
     
     if(islower(sInput[0]))
     {
-        iIndex = sInput[0] - 97;
+        iIndex = sInput[0] - '0';
+        cVar = sInput[0];
     }
     else
     {
@@ -241,7 +243,7 @@ void setVariable()
     getline(std::cin,sInput);
     dVariables[iIndex] = std::stod(sInput);
 
-    std::cout << "Variable " << sInput[0] << " set to " << dVariables[iIndex] << std::endl;
+    std::cout << "Variable " << cVar << " set to " << dVariables[iIndex] << std::endl;
 }
 
 bool setVariable(char cVariable,double dValue)
