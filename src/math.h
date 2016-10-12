@@ -8,7 +8,17 @@ const bool DEBUG = true; // only useful for development
 
 extern double dVariables[]; // contains 26 vars, value in math.cpp
 
-double doMath(std::string sInput, bool bRecursive); // This function both parses a string and does the operation
+
+/// This function set is operated linearly (doMath>solve>calculate)
+/// The functions get progressively simpler as you go down the line
+/// 
+// Parses the string into an easier to cut string and sends to solve
+double doMath(std::string sProblem); 
+// Parses the string into basic math (sends to calculate) then finds the final solution
+double solve(std::string sParsedProblem);
+// Function for solving a simple mathematical operation
+double calculate(double dLeft, double dRight, char cOperator);
+
 
 // Getter and setter functions for the iVariables array
 double readVariable(char cVariable);
@@ -16,7 +26,5 @@ void setVariable();
 // Overload for setting variables during math calculations
 bool setVariable(char cVariable,double dValue);
 
-// Function for solving parsed strings (only for use in doMath
-double solve(std::vector<char> cvOperators, std::vector<double> dvNumbers);
 
 #endif

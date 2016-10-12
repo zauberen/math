@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            doMath(sInput, false); // Parses the statement and returns a result into the variable a
+            doMath(sInput); // Parses the statement and returns a result into the variable a
         }
     }
 }

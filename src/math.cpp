@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdio.h>
+#include <sstream>
 #include <ctype.h>
 #include <string>
 #include <vector>
@@ -7,195 +8,193 @@
 #include "math.h"
 
 double dVariables[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // where [0] = a
+char cOperators[] = {'*','/','+','-','%','^','='};
 
-double doMath(std::string sProblem,bool bRecursive)
+double doMath(std::string sProblem)
 {
-    double dSolution = 0;
-    std::vector<double> dvNumbers;
-    std::vector<char> cvOperators;
-    double dTemp; // stores the current number being read
-    int iTens = 1; // stores the current place for the number being read
-    bool bReading = false; // keeps track of whether a number is being read or not (true = reading number)
-    bool bOperator = true; // makes sure there is an operator after each number (true = operator found/valid syntax)
-    bool bDecimal = false; // makes sure there is only one decimal in a number (true = decimal in num)
+    double dSolution = 0; // Stores the solution
+    std::string sParsedProblem = ""; // This stores the parsed version of sProblem.
+    bool bDoubleOperator = false; // Indicates that an operator precedes the char currently being parsed. (this is for spacing purposes)
 
-    // first for: Iterates through the characters of the string
-    // dumping numbers into the dvNumbers vector
-    // and dumping operators into the cvOperators vector
-    // This also checks for syntactical errors,
-    // and when such an error is encountered, the function
-    // returns 0
-    for(int i = sProblem.length() - 1; i >= 0; i--)
+    for(int i = 0; i < sProblem.length(); i++)
     {
-        if (isdigit(sProblem[i]))
-        {
-            // syntax check
-            if (!bReading)
-            if (!bOperator)
-            {
-                std::cout << "Error: Missing operator" << std::endl;
-                return 0;
-            }
-            
-            // ticks related booleans
-            bReading = true;
-            bOperator = false;
+        bool bDone = false; // streamlines following for if finished before all operators have been checked.
 
-            // adds number by the assumed place to the temp variable
-            dTemp += (sProblem[i] - '0') * iTens;
-            iTens = iTens * 10;
-        }
-        else if (sProblem[i] == '.' && bReading == true)
-        { // sets decimals
-            if (bDecimal)
-            {
-                std::cout << "Invalid syntax: too many decimals" << std::endl;
-            }
-            else
-            {
-                dTemp = dTemp/iTens;
-                bDecimal = true;
-            }
+        if (isdigit(sProblem[i]) || sProblem[i] == '.')
+        {
+            sParsedProblem += sProblem[i];
+
+            bDoubleOperator = false;
         }
         else if (islower(sProblem[i]))
-        { // Grabs variables
-            // tick booleans
-            bReading = false;
-            bDecimal = false;
-            
-            // If a variable is placed next to a number without an operator, multiplication is assumed
-            if (!bOperator)
-            {
-                cvOperators.push_back('*');
-                bOperator = true;
-            }
-            
-            // Pushes variable to the number vector
-            dvNumbers.push_back(readVariable(sProblem[i]));
-        }
-        else if (sProblem[i] == ')')
         {
-            // Backs up the sProblem string
-            std::string sTemp = sProblem;
-            // Removes already calculated parts of the string
-            sProblem.erase(sProblem.end(),sProblem.begin()+(i+1));
-            // Sends the problem back recursively
-            dvNumbers.push_back(doMath(sProblem, true));
-            // Restores the backup
-            sProblem = sTemp;
-
-            // Recalculate i
-            for (int n = sProblem.length() - 1; sProblem[i] != '('; n--)
-            { 
-                i--;
-            }
-
-            bReading = false;
-            bDecimal = false;
-        }
-        else if (sProblem[i] == '(' && bRecursive == true)
-        {
-            // This is only executed if the function is called recursively.
-            // it assumes the recursive part is done, calculates then returns the results
-            dSolution = solve(cvOperators,dvNumbers);
-            return dSolution;
+            sParsedProblem += readVariable(sProblem[i]);
+            
+            bDoubleOperator = false;
         }
         else if (sProblem[i] == '(')
         {
-            // Assumes improper parens syntax
-            std::cout << "Improper syntax: unclosed parens" << std::endl;
-            return 0;
-        }
-        else if (sProblem[i] == '*' || sProblem[i] == '/' || sProblem[i] == '+' || sProblem[i] == '-' || sProblem[i] == '%')
-        {
-            // Some error checking
-            if (bOperator)
+            std::string sParensProblem = "";
+
+            for (int n = i + 1; sProblem[n] != ')' && n < sProblem.length(); n++)
             {
-                std::cout << "Invalid syntax: too many operators" << std::endl;
-                return 0;
+                sParensProblem += sProblem[n];
+                i++;
             }
-
-            // ticks booleans
-            bOperator = true;
-            bReading = false;
-
-            // Pushes operators to the operator vector
-            cvOperators.push_back(sProblem[i]);
+            sParsedProblem += doMath(sParensProblem);
+            
+            bDoubleOperator = false;
         }
         else
         {
-            if (sProblem[i] != ' ')
+            // Checks if the item is an operator, if so, adds a space.
+            for (int n = 0; n < sizeof(cOperators); n++)
             {
-                std::cout << "char: " << sProblem[i] << " was ignored." << std::endl;
+                if (sProblem[i] == cOperators[n])
+                {
+                    if (DEBUG)
+                    {
+                        std::cout << "<Debug feed>" << std::endl
+                            << n << " hits on operators." << std::endl
+                            << "sizeof: " << sizeof(cOperators) << std::endl
+                            << "</Debug feed>" << std::endl;
+                    }
+
+                    if (bDoubleOperator)
+                    {
+                        sParsedProblem += sProblem[i];
+                        sParsedProblem += " ";
+                    }
+                    else
+                    {
+                        sParsedProblem += " ";
+                        sParsedProblem += sProblem[i];
+                        sParsedProblem += " ";
+                    }
+            
+                    bDoubleOperator = true;
+                    bDone = true;
+                }
             }
 
-            bReading = false;
-            bDecimal = false;
+            if (DEBUG)
+            {
+                std::cout << "<Debug feed>" << std::endl
+                    << "Operators loop was hit successfully" << std::endl
+                    << "</Debug feed>" << std::endl;
+            }
+        }
+        
+        if (DEBUG)
+        {
+            std::cout << "<Debug feed>" << std::endl
+                << "i = " << i << std::endl
+                << "sParsedProblem = " << sParsedProblem << std::endl
+                << "</Debug feed>" << std::endl;
         }
     }
-
-    dSolution = solve(cvOperators,dvNumbers); // does the math
-
-    if (bRecursive == false)
+    
+    if (DEBUG)
     {
-        // Set the answer variable 'a' to dSolution
-        dVariables[0] = dSolution;
+        std::cout << "<Debug feed>" << std::endl
+            << "End of logical portion of doMath..." << std::endl
+            << "input: " << sProblem << std::endl
+            << "output: " << sParsedProblem << std::endl
+            << "</Debug feed>" << std::endl;
     }
+
+
+    // Throws the parsed string to the solve function to actually solve the math
+    dSolution = solve(sParsedProblem);
+
+    setVariable('a',dSolution);
+
     return dSolution;
 }
 
-// Takes the completed table of numbers and operators and
-// actually does the math
-double solve(std::vector<char> cvOperators, std::vector<double> dvNumbers)
+double solve(std::string sParsedProblem)
+{
+    double dSolution = 0; // Stores the solution, returned at the end
+    double dTempLeft = 0; // Stores the temporary value that represents the (left) or (first) operative number (*1* + 1)
+    double dTempRight = 0; // Stores the temporary value that represents the (right) or (second) operative number (1 + *1*)
+    int count = 0; // Used in the debug feed
+    bool bSetter = true; // true = left, false = right
+    char cOperator; // stores the most recently used operator
+    std::string sRaw = ""; // Stores the raw output of stringstream
+    std::stringstream ss;
+    
+    ss << sParsedProblem;
+    // First for parse: Solve multiplication, division, and mod
+    while (ss >> sRaw)
+    {
+        if (DEBUG)
+        {
+            std::cout << count << ": " << sRaw << std::endl;
+            count++;
+        }
+        
+        if (isdigit(sRaw[0]) || sRaw[0] == '.')
+        {
+            if (bSetter)
+            {
+                dTempLeft = std::stod(sRaw);
+                bSetter = false;
+            }
+            else
+            {
+                dTempRight = std::stod(sRaw);
+
+                // Now do the appropriate calculation for the two items.
+                dSolution += calculate(dTempLeft,dTempRight,cOperator);
+                bSetter = true;
+            }
+        }
+        else
+        {
+            for(int i = 0; i < 2; i++)
+            {
+                if (sRaw[0] == cOperators[i])
+                {
+                    cOperator = cOperators[i];
+                }
+            }
+        }
+    }
+}
+
+double calculate(double dLeft, double dRight, char cOperator)
 {
     double dSolution = 0;
 
-    // This part does all division and multiplication and mod
-    for (int i = cvOperators.size() - 1; i >= 0; i++)
-    {
-        if (cvOperators[i] == '*')
-        {
-            dvNumbers[i - 1] = dvNumbers[i] * dvNumbers[i-1];
-        }
-        else if (cvOperators[i] == '/')
-        {
-            dvNumbers[i - 1] = dvNumbers[i] / dvNumbers[i-1];
-        }
-        else if (cvOperators[i] == '%')
-        {
-            std::cout << "Mod is not allowed currently" << std::endl;
-            // dvNumbers[i - 1] = dvNumbers[i] % dvNumbers[i-1];
-            return 0;
-        }
+    if (cOperator == cOperators[0])
+    { // Multiplication
+        dSolution = dLeft * dRight;
     }
-    // Remove irrelevant numbers and operators from the vectors
-    for (int i = cvOperators.size() - 1; i >= 0; i++)
-    {
-        if (cvOperators[i] == '*' || cvOperators[i] == '/')
-        {
-            dvNumbers.erase(dvNumbers.begin()+i);
-            cvOperators.erase(cvOperators.begin()+i);
-        }
+    else if (cOperator == cOperators[1])
+    { // Division
+        dSolution = dLeft / dRight;
     }
-    
-    // Next, do addition and subtraction
-    for (int i = cvOperators.size() - 1; i >= 0; i++)
-    {
-        if (cvOperators[i] == '+')
-        {
-            dvNumbers[i - 1] = dvNumbers[i] + dvNumbers[i-1];
-        }
-        else if (cvOperators[i] == '-')
-        {
-            dvNumbers[i - 1] = dvNumbers[i] - dvNumbers[i-1];
-        }
+    else if (cOperator == cOperators[2])
+    { // Addition
+        dSolution = dLeft + dRight;
     }
-    // Add them all up
-    for (int i = dvNumbers.size() - 1; i >= 0; i++)
-    {
-        dSolution += dvNumbers[i];
+    else if (cOperator == cOperators[3])
+    { // Subtraction
+        dSolution = dLeft - dRight;
     }
-    
+    else if (cOperator == cOperators[4])
+    { // Mod
+        std::cout << "Not ready" << std::endl;
+    }
+    else if (cOperator == cOperators[5])
+    { // Power
+        std::cout << "Not ready" << std::endl;
+    }
+    else if (cOperator == cOperators[6])
+    { // is (=)
+        std::cout << "Not ready" << std::endl;
+    }
+
     return dSolution;
 }
 
