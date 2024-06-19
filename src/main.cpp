@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iterator>
 #include <string>
 
 #include "math.h" // contains the math function
@@ -11,22 +12,23 @@ int main(int argc, char **argv)
     if (argc > 0)
     {
         if (DEBUG)
-        for(int i = 0; i < argc; i++)
+        for (int i = 0; i < argc; i++)
         {
-            std::cout << i << ": " << argv[i] << std::endl;
+            std::cout << doMath(std::string(argv[i])) << std::endl;
+            return 0;
         }
     }
     // Variables
     // Minor constants (only used here)
-    const double VERSION = 0;
+    const double VERSION = 0.01;
     const std::string DESCRIPTION = "Alpha Build";
     // Normal variables
     std::string sInput; // Used to grab and store user input
 
     std::cout << "Math version: " << VERSION << " " << DESCRIPTION << std::endl;
     std::cout << "For basic usage help send \"H\"" << std::endl;
-    
-    while(true)
+
+    while (true)
     {
         std::cout << "> ";
         getline(std::cin,sInput);
@@ -49,6 +51,7 @@ int main(int argc, char **argv)
             doMath(sInput); // Parses the statement and returns a result into the variable a
         }
     }
+    return 0;
 }
 
 void help()
@@ -63,7 +66,7 @@ void help()
         << std::endl
         << "For more documentation on using this application, consult the source repo's documentation" << std::endl
         << "This application is licensed under the terms of the GPLv3." << std::endl
-        << "To report bugs/issues:" << std::endl 
+        << "To report bugs/issues:" << std::endl
         << "Submit an issue at: www.github.com/dandreas/math" << std::endl
         << "or email the dev at: belfieldcecil@gmail.com" << std::endl;
 }

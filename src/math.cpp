@@ -7,31 +7,36 @@
 
 #include "math.h"
 
+// Stores the 26 variables that this can store (a to z)
 double dVariables[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // where [0] = a
-char cOperators[] = {'*','/','+','-','%','^','='};
+// Operators
+char cOperators[] = {'^','*','/','+','-','%','='};
 
 double doMath(std::string sProblem)
 {
     double dSolution = 0; // Stores the solution
-    std::string sParsedProblem = ""; // This stores the parsed version of sProblem.
+    std::string sParsedProblem = ""; // Store the normalised problem string
     bool bDoubleOperator = false; // Indicates that an operator precedes the char currently being parsed. (this is for spacing purposes)
 
     for(int i = 0; i < sProblem.length(); i++)
     {
         bool bDone = false; // streamlines following for if finished before all operators have been checked.
 
+        // Check for numbers
         if (isdigit(sProblem[i]) || sProblem[i] == '.')
         {
             sParsedProblem += sProblem[i];
 
             bDoubleOperator = false;
         }
+        // Check for variables
         else if (islower(sProblem[i]))
         {
             sParsedProblem += readVariable(sProblem[i]);
-            
+
             bDoubleOperator = false;
         }
+        // Check for sub-problems
         else if (sProblem[i] == '(')
         {
             std::string sParensProblem = "";
@@ -42,7 +47,7 @@ double doMath(std::string sProblem)
                 i++;
             }
             sParsedProblem += doMath(sParensProblem);
-            
+
             bDoubleOperator = false;
         }
         else
@@ -71,7 +76,7 @@ double doMath(std::string sProblem)
                         sParsedProblem += sProblem[i];
                         sParsedProblem += " ";
                     }
-            
+
                     bDoubleOperator = true;
                     bDone = true;
                 }
@@ -84,7 +89,7 @@ double doMath(std::string sProblem)
                     << "</Debug feed>" << std::endl;
             }
         }
-        
+
         if (DEBUG)
         {
             std::cout << "<Debug feed>" << std::endl
@@ -93,7 +98,7 @@ double doMath(std::string sProblem)
                 << "</Debug feed>" << std::endl;
         }
     }
-    
+
     if (DEBUG)
     {
         std::cout << "<Debug feed>" << std::endl
@@ -122,17 +127,11 @@ double solve(std::string sParsedProblem)
     char cOperator; // stores the most recently used operator
     std::string sRaw = ""; // Stores the raw output of stringstream
     std::stringstream ss;
-    
+
     ss << sParsedProblem;
     // First for parse: Solve multiplication, division, and mod
     while (ss >> sRaw)
     {
-        if (DEBUG)
-        {
-            std::cout << count << ": " << sRaw << std::endl;
-            count++;
-        }
-        
         if (isdigit(sRaw[0]) || sRaw[0] == '.')
         {
             if (bSetter)
@@ -143,7 +142,6 @@ double solve(std::string sParsedProblem)
             else
             {
                 dTempRight = std::stod(sRaw);
-
                 // Now do the appropriate calculation for the two items.
                 dSolution += calculate(dTempLeft,dTempRight,cOperator);
                 bSetter = true;
@@ -151,7 +149,7 @@ double solve(std::string sParsedProblem)
         }
         else
         {
-            for(int i = 0; i < 2; i++)
+            for(int i = 0; i < sizeof(cOperators); i++)
             {
                 if (sRaw[0] == cOperators[i])
                 {
@@ -159,7 +157,14 @@ double solve(std::string sParsedProblem)
                 }
             }
         }
+
+        if (DEBUG)
+        {
+            std::cout << count << ": " << sRaw << " : " << dSolution << std::endl;
+            count++;
+        }
     }
+    return dSolution;
 }
 
 double calculate(double dLeft, double dRight, char cOperator)
@@ -195,6 +200,11 @@ double calculate(double dLeft, double dRight, char cOperator)
         std::cout << "Not ready" << std::endl;
     }
 
+    if (DEBUG)
+    {
+        std::cout << dLeft << " " << cOperator << " " << dRight << " = " << dSolution << std::endl;
+    }
+
     return dSolution;
 }
 
@@ -205,6 +215,7 @@ double readVariable(char cVariable)
     if (islower(cVariable))
     {
         iIndex = cVariable - 97;
+        std::cout << "Index: " << iIndex << std::endl;
 
         return dVariables[iIndex];
     }
@@ -225,7 +236,7 @@ void setVariable()
 
     std::cout << "character: ";
     getline(std::cin,sInput);
-    
+
     if(islower(sInput[0]))
     {
         iIndex = sInput[0] - '0';
@@ -237,7 +248,7 @@ void setVariable()
             << "Input must be a lowercase alphanumeric character" << std::endl;
         return; // exits the function
     }
-    
+
     std::cout << "value: ";
     getline(std::cin,sInput);
     dVariables[iIndex] = std::stod(sInput);
@@ -245,13 +256,14 @@ void setVariable()
     std::cout << "Variable " << cVar << " set to " << dVariables[iIndex] << std::endl;
 }
 
-bool setVariable(char cVariable,double dValue)
+bool setVariable(char cVariable, double dValue)
 {
     int iIndex = 0;
 
-    if(islower(cVariable))
+    if (islower(cVariable))
     {
         iIndex = cVariable - 97;
+        std::cout << "Index: " << iIndex << std::endl;
     }
     else
     {
@@ -261,7 +273,7 @@ bool setVariable(char cVariable,double dValue)
     }
 
     dVariables[iIndex] = dValue;
-    
+
     std::cout << "var " << cVariable << " = " << dVariables[iIndex] << std::endl;
     return true;
 }
