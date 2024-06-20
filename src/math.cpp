@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <ctype.h>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -10,9 +11,24 @@
 // Stores the 26 variables that this can store (a to z)
 double dVariables[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // where [0] = a
 // Operators
-char cOperators[] = {'^','*','/','+','-','%','='};
+char cOperators[] = {
+    '^',
+    '*',
+    '/',
+    '%',
+    '+',
+    '-',
+    '='
+};
+const int POWER = 0;
+const int MULTIPLY = 1;
+const int DIVIDE = 2;
+const int MODULUS = 3;
+const int ADD = 4;
+const int SUBTRACT = 5;
+const int SET = 6;
 
-double doMath(std::string sProblem)
+double doMath(std::string sProblem, bool displaySteps)
 {
     double dSolution = 0; // Stores the solution
     std::string sParsedProblem = ""; // Store the normalised problem string
@@ -32,7 +48,7 @@ double doMath(std::string sProblem)
         // Check for variables
         else if (islower(sProblem[i]))
         {
-            sParsedProblem += readVariable(sProblem[i]);
+            sParsedProblem += std::to_string(readVariable(sProblem[i]));
 
             bDoubleOperator = false;
         }
@@ -46,7 +62,7 @@ double doMath(std::string sProblem)
                 sParensProblem += sProblem[n];
                 i++;
             }
-            sParsedProblem += doMath(sParensProblem);
+            sParsedProblem += std::to_string(doMath(sParensProblem, displaySteps));
 
             bDoubleOperator = false;
         }
@@ -110,26 +126,49 @@ double doMath(std::string sProblem)
 
 
     // Throws the parsed string to the solve function to actually solve the math
-    dSolution = solve(sParsedProblem);
+    dSolution = solve(sParsedProblem, displaySteps);
 
     setVariable('a',dSolution);
 
     return dSolution;
 }
 
-double solve(std::string sParsedProblem)
+double solve(std::string sParsedProblem, bool displaySteps)
 {
+    std::string sPartiallySolvedProblem = ""; // Store the problem as it gets simplified
     double dSolution = 0; // Stores the solution, returned at the end
+
+    sPartiallySolvedProblem = simplifyProblem(sParsedProblem, POWER, POWER);
+    if (sPartiallySolvedProblem[0] != ' ')
+    {
+        if (displaySteps)
+        {
+            std::cout << sPartiallySolvedProblem << std::endl;
+        }
+        sPartiallySolvedProblem = simplifyProblem(sPartiallySolvedProblem, MULTIPLY, MODULUS);
+        if (displaySteps)
+        {
+            std::cout << sPartiallySolvedProblem << std::endl;
+        }
+    }
+    dSolution = std::stod(simplifyProblem(sPartiallySolvedProblem, ADD, SUBTRACT));
+
+    return dSolution;
+}
+
+std::string simplifyProblem(std::string sParsedProblem, int operatorLowIdx,
+                       int operatorHighIdx) {
     double dTempLeft = 0; // Stores the temporary value that represents the (left) or (first) operative number (*1* + 1)
     double dTempRight = 0; // Stores the temporary value that represents the (right) or (second) operative number (1 + *1*)
     int count = 0; // Used in the debug feed
     bool bSetter = true; // true = left, false = right
-    char cOperator; // stores the most recently used operator
+    char cOperator = ':'; // stores the most recently used operator
+    char cRawOperator = ':';
     std::string sRaw = ""; // Stores the raw output of stringstream
+    std::string sSimplifiedProblem = ""; // Store the simplified problem
     std::stringstream ss;
 
     ss << sParsedProblem;
-    // First for parse: Solve multiplication, division, and mod
     while (ss >> sRaw)
     {
         if (isdigit(sRaw[0]) || sRaw[0] == '.')
@@ -142,14 +181,27 @@ double solve(std::string sParsedProblem)
             else
             {
                 dTempRight = std::stod(sRaw);
-                // Now do the appropriate calculation for the two items.
-                dSolution += calculate(dTempLeft,dTempRight,cOperator);
-                bSetter = true;
+                // Check if the math should be done now or later
+                if (cOperator != ':') {
+                    // Set the left operand to the solution and continue parsing the problem
+                    dTempLeft = calculate(dTempLeft,dTempRight,cOperator);
+                    // Set the operator to an invalid character so we can check whether it is valid next time
+                    cOperator = ':';
+                }
+                else {
+                    // Operator is invalid, so we add the raw operator back to the problem and try again next time
+                    sSimplifiedProblem += std::to_string(dTempLeft) + " " + cRawOperator + " ";
+                    // Set the right operand to the left operand and continue
+                    dTempLeft = dTempRight;
+                }
             }
         }
         else
         {
-            for(int i = 0; i < sizeof(cOperators); i++)
+            // Cache the raw operator, we may want this to put the problem back together
+            cRawOperator = sRaw[0];
+
+            for(int i = operatorLowIdx; i < operatorHighIdx; i++)
             {
                 if (sRaw[0] == cOperators[i])
                 {
@@ -157,45 +209,42 @@ double solve(std::string sParsedProblem)
                 }
             }
         }
-
-        if (DEBUG)
-        {
-            std::cout << count << ": " << sRaw << " : " << dSolution << std::endl;
-            count++;
-        }
     }
-    return dSolution;
+
+    sSimplifiedProblem += std::to_string(dTempLeft);
+
+    return sSimplifiedProblem;
 }
 
 double calculate(double dLeft, double dRight, char cOperator)
 {
     double dSolution = 0;
 
-    if (cOperator == cOperators[0])
-    { // Multiplication
-        dSolution = dLeft * dRight;
-    }
-    else if (cOperator == cOperators[1])
-    { // Division
-        dSolution = dLeft / dRight;
-    }
-    else if (cOperator == cOperators[2])
-    { // Addition
-        dSolution = dLeft + dRight;
-    }
-    else if (cOperator == cOperators[3])
-    { // Subtraction
-        dSolution = dLeft - dRight;
-    }
-    else if (cOperator == cOperators[4])
-    { // Mod
-        std::cout << "Not ready" << std::endl;
-    }
-    else if (cOperator == cOperators[5])
+    if (cOperator == POWER)
     { // Power
         std::cout << "Not ready" << std::endl;
     }
-    else if (cOperator == cOperators[6])
+    else if (cOperator == MULTIPLY)
+    { // Multiplication
+        dSolution = dLeft * dRight;
+    }
+    else if (cOperator == DIVIDE)
+    { // Division
+        dSolution = dLeft / dRight;
+    }
+    else if (cOperator == MODULUS)
+    { // Mod
+        dSolution = std::fmod(dLeft, dRight);
+    }
+    else if (cOperator == ADD)
+    { // Addition
+        dSolution = dLeft + dRight;
+    }
+    else if (cOperator == SUBTRACT)
+    { // Subtraction
+        dSolution = dLeft - dRight;
+    }
+    else if (cOperator == SET)
     { // is (=)
         std::cout << "Not ready" << std::endl;
     }
@@ -239,7 +288,7 @@ void setVariable()
 
     if(islower(sInput[0]))
     {
-        iIndex = sInput[0] - '0';
+        iIndex = sInput[0] - 97;
         cVar = sInput[0];
     }
     else
