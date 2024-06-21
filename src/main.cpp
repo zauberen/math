@@ -37,8 +37,8 @@ int main(int argc, char **argv)
     }
     // Variables
     // Minor constants (only used here)
-    const double VERSION = 0.01;
-    const std::string DESCRIPTION = "Alpha Build";
+    const double VERSION = 0.10;
+    const std::string DESCRIPTION = "Beta Build";
     // Normal variables
     std::string sInput; // Used to grab and store user input
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            doMath(sInput, displaySteps); // Parses the statement and returns a result into the variable a
+            std::cout << doMath(sInput, displaySteps) << std::endl; // Parses the statement and returns a result into the variable a
         }
     }
     return 0;
