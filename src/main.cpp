@@ -24,6 +24,11 @@ int main(int argc, char **argv)
                 {
                     displaySteps = true;
                 }
+                if (arg == "-h")
+                {
+                    help();
+                    shouldExit = true;
+                }
             }
             else {
                 std::cout << arg << " = " << doMath(arg, displaySteps) << std::endl;
@@ -37,12 +42,12 @@ int main(int argc, char **argv)
     }
     // Variables
     // Minor constants (only used here)
-    const double VERSION = 0.10;
-    const std::string DESCRIPTION = "Beta Build";
+    const double VERSION = 0.20;
+    const std::string DESCRIPTION = "2024-06-22";
     // Normal variables
     std::string sInput; // Used to grab and store user input
 
-    std::cout << "Math version: " << VERSION << " " << DESCRIPTION << std::endl;
+    std::cout << "CMath version: " << VERSION << " " << DESCRIPTION << std::endl;
     std::cout << "For basic usage help send \"H\"" << std::endl;
 
     while (true)
@@ -50,16 +55,16 @@ int main(int argc, char **argv)
         std::cout << "> ";
         getline(std::cin,sInput);
 
-        if (sInput[0] == 'H')
+        if (sInput == "H")
         {
             help();
         }
-        else if (sInput[0] == 'E')
+        else if (sInput == "E" || sInput == "Q")
         {
             std::cout << "Exiting Application..." << std::endl;
             return 0;
         }
-        else if (sInput[0] == 'S')
+        else if (sInput == "S")
         {
             setVariable(); // Sets a permanent variable
         }
@@ -73,19 +78,19 @@ int main(int argc, char **argv)
 
 void help()
 {
-    std::cout << "math [-v] [1+1*1/1%1^1*(1+1)]" << std::endl
-              << "v :: Show work (verbose)" << std::endl
-              << "Basic usage: <value> <modifier(*/+-)> <value>" << std::endl
-              << "Results are automatically printed into the variable 'a' and printed to the screen" << std::endl
-              << "Commands: (note: if a command is sent, it must be the first char)" << std::endl
+    std::cout << "cmath [-v -h] [1+1*1/1%1^1*(1+1)]" << std::endl
+              << "Command flags:" << std::endl
+              << "v :: Show work (verbose output)" << std::endl
+              << "h :: Show this help output and exit" << std::endl
+              << "Instructions:" << std::endl
+              << "Either pass math as arguments, each arg will be processed separately in order, or launch math with no arguments to enter interactive mode." << std::endl
+              << "Results are automatically dumped into the variable 'answer' and printed to the screen" << std::endl
+              << "Commands in interactive mode:" << std::endl
               << "H = Basic usage information" << std::endl
-              << "E = Exit the application" << std::endl
+              << "E or Q = Exit the application" << std::endl
               << "S = Set a variable (note: variables are stored for use between sessions)" << std::endl
-              << "Note: variable 'a' should not be used, as it will be overwritten by the next expression's result" << std::endl
               << std::endl
-              << "For more documentation on using this application, consult the source repo's documentation" << std::endl
               << "This application is licensed under the terms of the GPLv3." << std::endl
               << "To report bugs/issues:" << std::endl
-              << "Submit an issue at: www.github.com/dandreas/math" << std::endl
-              << "or email the dev at: belfieldcecil@gmail.com" << std::endl;
+              << "Submit an issue at: www.github.com/dandreas/math" << std::endl;
 }

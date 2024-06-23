@@ -1,17 +1,14 @@
-#include <_ctype.h>
-#include <cctype>
 #include <iostream>
 #include <stdio.h>
 #include <sstream>
-#include <ctype.h>
 #include <cmath>
 #include <string>
-#include <vector>
+#include <map>
 
 #include "math.h"
 
-// Stores the 26 variables that this can store (a to z)
-double dVariables[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // where [0] = a
+// Stores an unlimited amount of variables
+std::map<std::string, double> mVariables;
 // Whether to show "work" when processing a request
 bool displaySteps = false;
 // Operators
@@ -38,30 +35,36 @@ double doMath(std::string sProblem)
 
     for(unsigned long i = 0; i < sProblem.length(); i++)
     {
-        // Check for numbers
-        if (isdigit(sProblem[i]) || sProblem[i] == '.')
-        {
-            sParsedProblem += sProblem[i];
-            bDoubleOperator = false;
-        }
-        // Check for variables
-        else if (islower(sProblem[i]))
-        {
-            sParsedProblem += sProblem[i];
-            bDoubleOperator = false;
-        }
         // Check for sub-problems
-        else if (sProblem[i] == '(')
+        if (sProblem[i] == '(')
         {
+            int parenCount = 0;
             std::string sParensProblem = "";
-
-            for (unsigned long n = i + 1; sProblem[n] != ')' && n < sProblem.length(); n++)
+            for (unsigned long n = i + 1;
+                 n < sProblem.length()
+                     && ((parenCount == 0 && sProblem[n] != ')') || parenCount > 0); n++)
             {
                 sParensProblem += sProblem[n];
+                if (sProblem[n] == '(') parenCount += 1;
+                if (sProblem[n] == ')') parenCount -= 1;
                 i++;
             }
-            sParsedProblem += std::to_string(doMath(sParensProblem));
+            // Skip the closing parentheses
+            i++;
 
+            // Solve the problem and add the result to the parsed problem
+            double parenSolution = doMath(sParensProblem);
+            sParsedProblem += std::to_string(parenSolution);
+            if (displaySteps)
+            {
+                std::cout << sParensProblem  << " = " << parenSolution << std::endl;
+            }
+            bDoubleOperator = false;
+        }
+        // Handle numbers/variables
+        else if (!isOperator(sProblem[i]))
+        {
+            sParsedProblem += sProblem[i];
             bDoubleOperator = false;
         }
         else
@@ -124,7 +127,15 @@ double doMath(std::string sProblem)
 
     // Throws the parsed string to the solve function to actually solve the math
     dSolution = solve(sParsedProblem);
-    setVariable('a', dSolution);
+    // Avoid double printing when assigning the answer
+    if (displaySteps) {
+        displaySteps = false;
+        setVariable("answer", dSolution);
+        displaySteps = true;
+    }
+    else {
+        setVariable("answer", dSolution);
+    }
 
     return dSolution;
 }
@@ -132,6 +143,7 @@ double doMath(std::string sProblem)
 double solve(std::string sParsedProblem)
 {
     std::string sPartiallySolvedProblem = ""; // Store the problem as it gets simplified
+    std::string sCachedOutput = ""; // Store the prior output for when displaying steps
     double dSolution = 0; // Stores the solution, returned at the end
 
     sPartiallySolvedProblem = simplifyProblem(sParsedProblem, POWER, POWER);
@@ -140,23 +152,25 @@ double solve(std::string sParsedProblem)
         if (displaySteps)
         {
             std::cout << sPartiallySolvedProblem << std::endl;
+            sCachedOutput = sPartiallySolvedProblem;
         }
         sPartiallySolvedProblem = simplifyProblem(sPartiallySolvedProblem, MULTIPLY, MODULUS);
-        if (displaySteps)
+        if (displaySteps && sCachedOutput != sPartiallySolvedProblem)
         {
             std::cout << sPartiallySolvedProblem << std::endl;
+            sCachedOutput = sPartiallySolvedProblem;
         }
     }
     sPartiallySolvedProblem = simplifyProblem(sPartiallySolvedProblem, ADD, SUBTRACT);
-    if (displaySteps)
+    if (displaySteps && sCachedOutput != sPartiallySolvedProblem)
     {
         std::cout << sPartiallySolvedProblem << std::endl;
     }
     sPartiallySolvedProblem = simplifyProblem(sPartiallySolvedProblem, SET, SET);
     // Handle situations where just a variable is passed, just print the value of the variable
-    if (std::islower(sPartiallySolvedProblem[0]))
+    if (!isNumber(sPartiallySolvedProblem))
     {
-        dSolution = readVariable(sPartiallySolvedProblem[0]);
+        dSolution = readVariable(sPartiallySolvedProblem);
     }
     else
     {
@@ -181,7 +195,7 @@ std::string simplifyProblem(std::string sParsedProblem, int operatorLowIdx,
     while (ss >> sRaw)
     {
         // Handle numbers and variables
-        if (islower(sRaw[0]) || isdigit(sRaw[0]) || sRaw[0] == '.')
+        if (!isOperator(sRaw))
         {
             if (bSetter)
             {
@@ -236,9 +250,9 @@ std::string calculate(std::string sLeft, std::string sRight, char cOperator)
     double dRight = 0;
 
     // Get the right operand as a double
-    if (islower(sRight[0]))
+    if (!isNumber(sRight))
     {
-        dRight = readVariable(sRight[0]);
+        dRight = readVariable(sRight);
     }
     else
     {
@@ -248,15 +262,15 @@ std::string calculate(std::string sLeft, std::string sRight, char cOperator)
     // Handle SET separately since dLeft cannot be set
     if (cOperator == cOperators[SET])
     { // is (=)
-        setVariable(sLeft[0], dRight);
+        setVariable(sLeft, dRight);
         dSolution = dRight;
     }
     else
     {
         // Get the left operand as a double
-        if (islower(sLeft[0]))
+        if (!isNumber(sLeft))
         {
-            dLeft = readVariable(sLeft[0]);
+            dLeft = readVariable(sLeft);
         }
         else
         {
@@ -297,72 +311,65 @@ std::string calculate(std::string sLeft, std::string sRight, char cOperator)
     return std::to_string(dSolution);
 }
 
-double readVariable(char cVariable)
+double readVariable(std::string sVariable)
 {
-    int iIndex = 0;
-
-    if (islower(cVariable))
+    if (mVariables.count(sVariable))
     {
-        iIndex = cVariable - 97;
-        return dVariables[iIndex];
+        return mVariables[sVariable];
     }
     else
     {
-        std::cout << "Invalid variable: " << cVariable << std::endl
-            << "Variables must be lowercase alphanumeric characters" << std::endl;
+        std::cout << "Invalid variable: " << sVariable << std::endl
+                  << "Variables must be assigned before use, defaulting to 0" << std::endl;
     }
-
-    return iIndex; // This is for bug testing
+    return 0;
 }
 
 void setVariable()
 {
-    std::string sInput; // Used for user input
-    char cVar; // Used as a reference for the final cout
-    int iIndex = 0; // Stores the array location (dVariables)
+    std::string sName;
+    std::string sValue;
 
-    std::cout << "character: ";
-    getline(std::cin,sInput);
-
-    if(islower(sInput[0]))
-    {
-        iIndex = sInput[0] - 97;
-        cVar = sInput[0];
-    }
-    else
-    {
-        std::cout << "Invalid Input: " << sInput << std::endl
-            << "Input must be a lowercase alphanumeric character" << std::endl;
-        return; // exits the function
-    }
-
+    // Get the values to enter into the variable map
+    std::cout << "variable name: ";
+    getline(std::cin,sName);
     std::cout << "value: ";
-    getline(std::cin,sInput);
-    dVariables[iIndex] = std::stod(sInput);
-
-    std::cout << "Variable " << cVar << " set to " << dVariables[iIndex] << std::endl;
+    getline(std::cin,sValue);
+    // Update the map and notify the user
+    if (isNumber(sValue) && setVariable(sName, std::stod(sValue))) {
+        std::cout << "Variable " << sName << " set to " << mVariables[sName] << std::endl;
+    }
 }
 
-bool setVariable(char cVariable, double dValue)
+bool setVariable(std::string sVariable, double dValue)
 {
-    int iIndex = 0;
-
-    if (islower(cVariable))
+    // Check if the variable sent in is just a number
+    if (isNumber(sVariable))
     {
-        iIndex = cVariable - 97;
-    }
-    else
-    {
-        std::cout << "Invalid Input: " << cVariable << std::endl
-            << "Input character must be a valid alpha character and on the left side of assignment (b = 1 + 2)" << std::endl;
+        std::cout << "Invalid input: " << sVariable << std::endl
+                  << "Input character must be a valid string and on the left side of assignment (b = 1 + 2)" << std::endl;
         return false; // exits the function
     }
 
-    dVariables[iIndex] = dValue;
-
+    mVariables[sVariable] = dValue;
     if (displaySteps)
     {
-        std::cout << "var " << cVariable << " = " << dVariables[iIndex] << std::endl;
+        std::cout << sVariable << " = " << mVariables[sVariable] << std::endl;
     }
     return true;
+}
+
+bool isNumber(std::string s)
+{
+    return !s.empty() && s.find_first_not_of("0123456789.") == std::string::npos;
+}
+
+bool isOperator(std::string s)
+{
+    return !s.empty() && s.find_first_not_of("^*/%+-=") == std::string::npos;
+}
+
+bool isOperator(char s)
+{
+    return isOperator(std::string() + s);
 }

@@ -1,13 +1,10 @@
 #ifndef MATH_H
 #define MATH_H
-
-#include <vector>
-
+#include <map>
 // Global variables
 const bool DEBUG = false; // only useful for development
-extern double dVariables[]; // contains 26 vars, value in math.cpp
+extern std::map<std::string, double> mVariables; // Contains all variables
 extern bool displaySteps; // Whether to show "work" when processing a request (math.cpp)
-
 
 /// This function set is operated linearly (doMath>solve>simplifyProblem>calculate)
 ///
@@ -23,10 +20,14 @@ std::string calculate(std::string sLeft, std::string sRight, char cOperator);
 
 
 // Getter and setter functions for the iVariables array
-double readVariable(char cVariable);
+double readVariable(std::string sVariable);
 void setVariable();
 // Overload for setting variables during math calculations
-bool setVariable(char cVariable, double dValue);
-
+bool setVariable(std::string sVariable, double dValue);
+// Check if the string given is a number (incl float)
+bool isNumber(std::string s);
+// Check if a string is an operator
+bool isOperator(std::string s);
+bool isOperator(char s);
 
 #endif
